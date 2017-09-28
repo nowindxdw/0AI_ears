@@ -2,7 +2,7 @@
 try to listen music and recognize the author
 
 
-##prepare
+##prepare list
 
 
 python 声音处理库选择
@@ -71,6 +71,6 @@ sound  = AudioSegment.from_file("/Users/dawei/Downloads/bandari.mp3")
 print(sound.duration_seconds)
 ```
 
-
+##audiolazy
 
 
