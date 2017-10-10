@@ -74,3 +74,14 @@ print(sound.duration_seconds)
 ##audiolazy
 
 
+##audioread
+```python
+pip install audioread
+```
+
+```python
+import audioread
+filename="/Users/dawei/Downloads/bandari.mp3"
+with audioread.audio_open(filename) as f:
+    print(f.channels, f.samplerate, f.duration)
+```
