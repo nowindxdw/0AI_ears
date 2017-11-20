@@ -26,6 +26,7 @@ def convert_mp3_to_wav(filename):
 
                 for buf in f:
                     of.writeframes(buf)
+           return filename+".wav"
 
     except audioread.DecodeError:
        print("File could not be decoded.")

@@ -57,7 +57,13 @@ typings/
 # dotenv environment variables file
 .env
 .idea
+test/__pycache__/
+test/xears/.DS_Store
+test/xears/__init__.pyc
+test/xears/data_utils/__init__.pyc
+test/xears/data_utils/convert_utils.pyc
 
 /gitPush.md
 /test/.cache/
+*.pyc
 *.wav
