@@ -6,8 +6,6 @@ import array
 import os
 import numpy as np
 
-from matplotlib import pyplot
-
 def split(filePath, step = 200000):
     file = open(filePath, 'rb')
     base = 1 / (1<<15)
