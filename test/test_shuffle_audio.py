@@ -12,6 +12,7 @@ def test_shuffle_audio():
     train_x, train_y = shuffle_audio.shuffle_two_audio(trainA,trainB)
     print(train_x.shape)
     print(train_y.shape)
+    print(train_y)
 
 if __name__ == '__main__':
     pytest.main([__file__])
