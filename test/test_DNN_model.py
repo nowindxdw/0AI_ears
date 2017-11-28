@@ -14,7 +14,7 @@ def test_DNN():
     train_x, train_y, test_x, test_y= pre_dataset.pre_data(A_path,B_path)
     print('train_x shape='+str(train_x.shape))
     print('test_x shape='+str(test_x.shape))
-
+    DNN.build_model(train_x, train_y, test_x, test_y)
 
 if __name__ == '__main__':
     pytest.main([__file__])

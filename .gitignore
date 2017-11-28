@@ -67,3 +67,4 @@ test/xears/data_utils/convert_utils.pyc
 /test/.cache/
 *.pyc
 *.wav
+/.cache/

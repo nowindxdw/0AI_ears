@@ -20,7 +20,7 @@ def pre_data(mp3_a,mp3_b,step = 200000):
     test_size = int(train_len*0.3)
     test_x = np.zeros((train_x_flatten.shape[0],test_size))
     test_y = np.zeros(test_size)
-    print('test_size'+str(test_size))
+    print('test_size:'+str(test_size))
     for i in range(test_size):
        test_index = np.random.randint(train_x_flatten.shape[1])
        test_x[:,i] = train_x_flatten[:,test_index]
