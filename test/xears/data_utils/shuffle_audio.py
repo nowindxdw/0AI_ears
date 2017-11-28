@@ -38,9 +38,10 @@ def shuffle_two_audio(A, B):
    train_set_x = np.concatenate((A,B),axis=1)
    train_set_x = np.concatenate((train_set_x,C),axis=1)
    train_u = a_u+b_u+c_u
-   train_set_y = np.zeros((1,train_u))
-   train_set_y[0,:a_u] = 1
-   train_set_y[0,a_u:b_u+a_u] = -1
+   #dtype default float64, but label must be integer
+   train_set_y = np.zeros(train_u,dtype=np.int)
+   train_set_y[a_u] = 1
+   train_set_y[a_u:b_u+a_u] = 2
    return train_set_x, train_set_y
 
 
