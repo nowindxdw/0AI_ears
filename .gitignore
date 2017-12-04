@@ -68,3 +68,4 @@ test/xears/data_utils/convert_utils.pyc
 *.pyc
 *.wav
 /.cache/
+/test/xears/models/tf/output/

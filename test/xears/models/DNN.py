@@ -14,7 +14,7 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.optimizers import RMSprop
 from keras.utils import np_utils
 
-def build_model(X_train, Y_train, X_test, Y_test, nb_classes = 3, nb_epoch = 20, batch_size = 10, hidden_unit = [512,512]):
+def build_model(X_train, Y_train, X_test, Y_test, nb_classes = 3, nb_epoch = 20, batch_size = 8, hidden_unit = [512,512]):
     #convert class vectors to binary class matrices
     #to_categorical(y, nb_classes=None
     #将类别向量(从0到nb_classes的整数向量)映射为二值类别矩阵, 用于应用到以categorical_crossentropy为目标函数的模型中
@@ -51,7 +51,7 @@ def build_model(X_train, Y_train, X_test, Y_test, nb_classes = 3, nb_epoch = 20,
     # 包含评估模型在训练和测试时的性能的指标，典型用法是metrics=['accuracy']
     # 如果要在多输出模型中为不同的输出指定不同的指标，可像该参数传递一个字典，例如metrics={'ouput_a': 'accuracy'}
     model.compile(loss='categorical_crossentropy',
-                  optimizer=RMSprop(),
+                  optimizer=RMSprop(lr=0.003, rho=0.9, epsilon=1e-08, decay=0.2),
                   metrics=['accuracy'])
 
     # 训练模型
@@ -63,8 +63,9 @@ def build_model(X_train, Y_train, X_test, Y_test, nb_classes = 3, nb_epoch = 20,
 
     # fit函数返回一个History的对象，其History.history属性记录了损失函数和其他指标的数值随epoch变化的情况，如果有验证集的话，也包含了验证集的这些指标变化情况
     history = model.fit(X_train, Y_train,
-                        batch_size=batch_size, nb_epoch=nb_epoch,
-                        verbose=1, validation_data=(X_test, Y_test))
+                        batch_size=batch_size, epochs=nb_epoch,
+                        verbose=1, validation_data=(X_test, Y_test),
+                        shuffle = True)
     # 按batch计算在某些输入数据上模型的误差
     print('-------evaluate--------')
     score = model.evaluate(X_test, Y_test, verbose=1)
