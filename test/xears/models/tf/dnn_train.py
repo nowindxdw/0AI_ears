@@ -2,6 +2,7 @@
 #dnn_train.py
 
 import os
+import sys
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
@@ -10,14 +11,14 @@ import dnn_inference
 
 #配置神经网络参数
 BATCH_SIZE = 100
-LEARNING_RATE_BASE = 0.8
+LEARNING_RATE_BASE = 0.5
 LEARNING_RATE_DECAY = 0.99
 REGULARAZTION_RATE = 0.0001
 TRAINING_STEPS = 9001
 MOVING_AVERAGE_DECAY = 0.99
-
+PATH = os.path.abspath(os.path.dirname(sys.argv[0]))
 #模型保存的路径和文件名
-MODEL_SAVE_PATH = os.path.dirname(__file__)+'/DNN/output/model'
+MODEL_SAVE_PATH = PATH+'/output/'
 MODEL_NAME = "model.ckpt"
 
 INPUT_NODE,LAYER1_NODE,LAYER2_NODE,OUTPUT_NODE = dnn_inference.get_node_dims()
@@ -38,7 +39,7 @@ def train(data_set):
     #可训练参数的集合
     variables_averages_op = variable_averages.apply(tf.trainable_variables())
     #交叉熵损失 函数
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels = y, logits = tf.argmax(y_, 1))
+    cross_entropy =  tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y,  labels=tf.argmax(y_, 1))
     #交叉熵平均值
     cross_entropy_mean = tf.reduce_mean(cross_entropy)
     #总损失
@@ -55,7 +56,7 @@ def train(data_set):
 
     #初始会话，并开始训练过程
     with tf.Session() as sess:
-        tf.initialize_all_variables().run()
+        tf.global_variables_initializer().run()
         for i in range(TRAINING_STEPS):
             xs, ys = data_set.train.next_batch(BATCH_SIZE)
             op, loss_value, step = sess.run([train_op, loss, global_step], feed_dict={x: xs, y_: ys})
