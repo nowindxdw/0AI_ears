@@ -4,7 +4,7 @@
 import tensorflow as tf
 
 ##定义神经网络相关参数
-def get_node_dims(layer_dims=[784,512,512,10]):
+def get_node_dims(layer_dims=[400000,512,512,3]):
     INPUT_NODE = layer_dims[0]
     LAYER1_NODE = layer_dims[1]
     LAYER2_NODE = layer_dims[2]

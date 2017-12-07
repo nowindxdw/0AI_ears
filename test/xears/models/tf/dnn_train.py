@@ -1,16 +1,18 @@
 #coding:utf-8
 #dnn_train.py
-
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import sys
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
 #加载 dnn_inference.py 中定义的常量和前向传播的函数
-import dnn_inference
+from . import dnn_inference
 
 #配置神经网络参数
-BATCH_SIZE = 100
+BATCH_SIZE = 10
 LEARNING_RATE_BASE = 0.5
 LEARNING_RATE_DECAY = 0.99
 REGULARAZTION_RATE = 0.0001
@@ -52,18 +54,21 @@ def train(data_set):
     with tf.control_dependencies([train_step, variables_averages_op]):
         train_op = tf.no_op(name='train')
 
-    saver = tf.train.Saver()
+    #saver = tf.train.Saver()
 
     #初始会话，并开始训练过程
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
         for i in range(TRAINING_STEPS):
             xs, ys = data_set.train.next_batch(BATCH_SIZE)
-            op, loss_value, step = sess.run([train_op, loss, global_step], feed_dict={x: xs, y_: ys})
+            #convert tensor object to ndarray
+            ys = tf.convert_to_tensor(ys)
+            x_r,y_r=sess.run([xs,ys])
+            op, loss_value, step = sess.run([train_op, loss, global_step], feed_dict={x: x_r, y_: y_r})
             if i % 1000 == 0:
                 print ("After %d training step(s), loss on training batch is %g." % (step, loss_value))
 
-        saver.save(sess, os.path.join(MODEL_SAVE_PATH, MODEL_NAME), global_step=global_step)
+        #saver.save(sess, os.path.join(MODEL_SAVE_PATH, MODEL_NAME), global_step=global_step)
 
 def main(argv=None):
     mnist = input_data.read_data_sets("/User/dawei/AI/DNN/data", one_hot=True)
@@ -71,4 +76,4 @@ def main(argv=None):
 
 #if __name__ == '__main__':
 #   tf.app.run()
-main()
+#main()

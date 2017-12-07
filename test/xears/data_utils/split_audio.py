@@ -19,7 +19,7 @@ def split(filePath, step = 200000):
     rightChannel = shortArray[1::2]
     print("leftChannel"+str(len(leftChannel)))
     print("rightChannel"+str(len(rightChannel)))
-    slen = len(leftChannel)/step
+    slen = int(len(leftChannel)/step)
     train_ori = np.zeros((2,slen,step))
     for i in range(slen):
        train_ori[0][i] = leftChannel[i*step:(i+1)*step]
