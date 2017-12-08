@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """Utilities audio convert."""
 from __future__ import absolute_import
 from __future__ import print_function
@@ -11,11 +12,12 @@ import numpy as np
 def dense_to_one_hot(labels_dense, num_classes=3):
   """Convert class labels from scalars to one-hot vectors."""
   num_labels = labels_dense.shape[0]
-  index_offset = numpy.arange(num_labels) * num_classes
-  labels_one_hot = numpy.zeros((num_labels, num_classes))
-  #labels_dense.ravel()将整个数组展成一个一维数组
-  #labels_dense.flat[i]即将labels_dense看成一个一维数组，取其第i个变量
-  labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1#报错？
+  labels_one_hot = np.zeros((num_labels, num_classes))
+  #print(labels_one_hot.shape)
+  for i in range(num_labels):
+    labels_index = int(labels_dense[i])
+    labels_one_hot[i][labels_index] = 1
+  #print(labels_one_hot)  
   return labels_one_hot
 
 class DataSet(object):
@@ -28,7 +30,7 @@ class DataSet(object):
       self._num_examples = int(images.shape[0])
       # Convert shape from [num examples, rows, columns, depth]
       # to [num examples, rows*columns] (assuming depth == 1)
-
+     
       #assert images.shape[3] == 1
       #images = images.reshape(images.shape[0],images.shape[1] * images.shape[2])
       # Convert from [0, 255] -> [0.0, 1.0].
@@ -121,7 +123,9 @@ def pre_wav_data(wav_a,wav_b,step = 200000,fake_data=False,):
        train_x_flatten= np.delete(train_x_flatten, test_index, axis = 1)
        train_y = np.delete(train_y, test_index)
     train_x_flatten = tf.transpose(train_x_flatten)
+    train_y = dense_to_one_hot(train_y)
     test_x = tf.transpose(test_x)
+    test_y = dense_to_one_hot(test_y)
     data_sets.train = DataSet(train_x_flatten, train_y)
     data_sets.validation = DataSet(test_x, test_y)
     data_sets.test = DataSet(test_x, test_y)

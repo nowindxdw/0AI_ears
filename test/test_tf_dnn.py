@@ -8,8 +8,8 @@ from xears.models.tf import dnn_train
 #xears_test
 
 def test_DNN():
-    A_path = os.path.dirname(__file__)+'\\xears\\mp3source\\model.wav'
-    B_path = os.path.dirname(__file__)+'\\xears\\mp3source\\sad.wav'
+    A_path = os.path.dirname(__file__)+os.path.sep+'xears'+os.path.sep+'mp3source'+os.path.sep+'model.wav'
+    B_path = os.path.dirname(__file__)+os.path.sep+'xears'+os.path.sep+'mp3source'+os.path.sep+'sad.wav'
     #train_x, train_y, test_x, test_y= pre_dataset.pre_data(A_path,B_path)
     data_set = pre_dataset.pre_wav_data(A_path,B_path)
     dnn_train.train(data_set)
