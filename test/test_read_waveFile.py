@@ -21,7 +21,12 @@ def test_read_file(type="bin"):
         file_path = output_base_path+"modelFile.npy"
         f = file(file_path,"rb")
         output = np.load(f)
-    show_pcm.showWavArray(output[0],0,400000)
+
+    output_wave_path = output_base_path+"test.wave"
+    split_audio.recover(output[10],output_wave_path)
+
+    #show_pcm.showWavArray(output[10],0,400000)
+
     #print(output.shape)
     #print(type(output))
     #npyfile = output_base_path+"model.npy"

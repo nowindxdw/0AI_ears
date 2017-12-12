@@ -6,6 +6,8 @@ from __future__ import print_function
 import array
 import os
 import numpy as np
+import wave
+import contextlib
 
 def split(filePath, step = 200000):
     file = open(filePath, 'rb')
@@ -39,5 +41,12 @@ def store(input, store_path, store_type='npy'):
         np.save(f,input)
         f.close()
         #读取 f = file(path,"rb")  np.load(f)
+
+def recover(input, store_path):
+    print(input.shape)
+    with contextlib.closing(wave.open(store_path, 'wb')) as wavfile:
+        wavfile.setparams((2, 2, 44100, 0, 'NONE', 'NONE'))
+        wavfile.writeframes(input)
+
 
 
