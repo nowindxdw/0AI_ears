@@ -8,6 +8,8 @@ from . import pre_dataset
 # Globally-importable utils.
 from .convert_utils import convert_mp3_to_wav
 from .show_pcm import show
+from .show_pcm import showWavArray
 from .split_audio import split
+from .split_audio import store
 from .shuffle_audio import shuffle_two_audio
 from .pre_dataset import pre_data

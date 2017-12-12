@@ -26,3 +26,18 @@ def show(filePath, start = 0, end = 5000):
     pyplot.title('pcm right channel [{0}-{1}] max[{2}]'.format(start, end, count))
     pyplot.plot(range(start, end), rightChannel[start:end])
     pyplot.show()
+
+def showWavArray(inputArray, start = 0, end = 5000):
+    count = inputArray.shape[0]
+    leftChannel = inputArray[:,0]
+    #print(leftChannel.shape)
+    rightChannel = inputArray[:,1]
+    #print(rightChannel.shape)
+    fig = pyplot.figure(1)
+    pyplot.subplot(211)
+    pyplot.title('pcm left channel [{0}-{1}] max[{2}]'.format(start, end, count))
+    pyplot.plot(range(start, end), leftChannel[start:end])
+    pyplot.subplot(212)
+    pyplot.title('pcm right channel [{0}-{1}] max[{2}]'.format(start, end, count))
+    pyplot.plot(range(start, end), rightChannel[start:end])
+    pyplot.show()

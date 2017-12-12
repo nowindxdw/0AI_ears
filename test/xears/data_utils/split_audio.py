@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """Utilities audio convert."""
 from __future__ import absolute_import
 from __future__ import print_function
@@ -24,4 +25,19 @@ def split(filePath, step = 200000):
     for i in range(slen):
        train_ori[0][i] = leftChannel[i*step:(i+1)*step]
        train_ori[1][i] =  rightChannel[i*step:(i+1)*step]
-    return train_ori
+    return np.transpose(train_ori, (1, 2, 0))  #output (m, size, depth)
+
+
+def store(input, store_path, store_type='npy'):
+    if store_type == 'npy':
+        np.save(store_path,input)  # np.load(store_path)
+    if store_type == 'bin':
+        input.tofile(store_path)
+        # output = np.fromfile(store_path,dtype=**),output.shape = []
+    if store_type == 'file':  #store npy file
+        f = file(store_path,'wb')
+        np.save(f,input)
+        f.close()
+        #读取 f = file(path,"rb")  np.load(f)
+
+
