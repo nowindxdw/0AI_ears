@@ -8,8 +8,8 @@ from xears.data_utils import pre_dataset
 #xears_test
 
 def test_pre_data():
-    A_path = os.path.dirname(__file__)+'/xears/mp3source/model.mp3'
-    B_path = os.path.dirname(__file__)+'/xears/mp3source/sad.mp3'
+    A_path = os.path.dirname(__file__)+os.path.sep+'xears'+os.path.sep+'mp3source'+os.path.sep+'model.mp3'
+    B_path = os.path.dirname(__file__)+os.path.sep+'xears'+os.path.sep+'mp3source'+os.path.sep+'sad.mp3'
     train_x, train_y, test_x, test_y = pre_dataset.pre_data(A_path,B_path)
     print(train_x.shape)
     print(train_y.shape)

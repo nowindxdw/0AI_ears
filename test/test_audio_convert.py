@@ -8,7 +8,8 @@ from xears.data_utils import split_audio
 #xears_test
 
 def test_vector_classification():
-    wav_name = convert_utils.convert_mp3_to_wav(os.path.dirname(__file__)+'/xears/mp3source/model.mp3')
+    audio_path = os.path.dirname(__file__)+os.path.sep+'xears'+os.path.sep+'mp3source'+os.path.sep+'model.mp3'
+    wav_name = convert_utils.convert_mp3_to_wav(audio_path)
     print(wav_name)
     #show_pcm.show(wav_name,0,5000)
     train_ori = split_audio.split(wav_name )
