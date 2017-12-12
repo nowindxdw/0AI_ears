@@ -23,7 +23,7 @@ def test_read_file(type="bin"):
         output = np.load(f)
 
     output_wave_path = output_base_path+"test.wave"
-    split_audio.recover(output[10],output_wave_path)
+    split_audio.recover(output[8],output_wave_path)
 
     #show_pcm.showWavArray(output[10],0,400000)
 

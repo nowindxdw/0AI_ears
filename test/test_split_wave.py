@@ -14,8 +14,9 @@ def test_split_wave():
     wav_splits = split_audio.split(wav_name,400000)
     #print(type(wav_splits))
     #print(wav_splits.shape)
-    output_base_path = os.path.dirname(__file__)+os.path.sep+"xears"+os.path.sep+"data_source"+os.path.sep
-    split_audio.store(wav_splits,output_base_path+"model.bin",store_type = "bin")
+
+    #output_base_path = os.path.dirname(__file__)+os.path.sep+"xears"+os.path.sep+"data_source"+os.path.sep
+    #split_audio.store(wav_splits,output_base_path+"model.bin",store_type = "bin")
     #split_audio.store(wav_splits,output_base_path+"model.npy",store_type = "npy")
     #split_audio.store(wav_splits,output_base_path+"modelFile.npy",store_type = "file")
 

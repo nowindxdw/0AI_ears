@@ -18,8 +18,8 @@ def split(filePath, step = 200000):
     count = int(size / 2)
     shortArray.fromfile(file, size) # faster than struct.unpack
     file.close()
-    leftChannel = shortArray[::2]
-    rightChannel = shortArray[1::2]
+    leftChannel = shortArray[::2] #从整列表中切出，分隔为“2”
+    rightChannel = shortArray[1::2] #从整列表中切出，从1开始，分隔为“2”
     print("leftChannel"+str(len(leftChannel)))
     print("rightChannel"+str(len(rightChannel)))
     slen = int(len(leftChannel)/step)
@@ -43,7 +43,7 @@ def store(input, store_path, store_type='npy'):
         #读取 f = file(path,"rb")  np.load(f)
 
 def recover(input, store_path):
-    print(input.shape)
+    input = np.reshape(input[:,:],(input.shape[0]*2,1))
     with contextlib.closing(wave.open(store_path, 'wb')) as wavfile:
         wavfile.setparams((2, 2, 44100, 0, 'NONE', 'NONE'))
         wavfile.writeframes(input)
