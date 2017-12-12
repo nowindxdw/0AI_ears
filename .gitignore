@@ -69,3 +69,7 @@ test/xears/data_utils/convert_utils.pyc
 *.wav
 /.cache/
 /test/xears/models/tf/output/
+/test/xears/data_source/*.bin
+/test/xears/data_source/*.npy
+/test/xears/data_source/*.txt
+*.DS_Store
