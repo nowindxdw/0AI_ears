@@ -1,4 +1,4 @@
 ```angular2html
-git push https://nowindxdw@github.com/nowindxdw/0AI_ears.git
+git push https://nowindxdw@github.com/nowindxdw/deep_ears.git
 
 ```
