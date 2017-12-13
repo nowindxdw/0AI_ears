@@ -57,16 +57,15 @@ def writeSampleWav(wave_path):
     f.writeframes(wave_data.tostring())
     f.close()
 
-def writeWav(wave_data, params):
+def writeWav(wave_data, params, wave_path):
     nframes = params['nframes']      #采样点数
     nchannels = params['nchannels']  #通道数
-    outData = wave_data  #待写入wav的数据，
-    outData = np.reshape(outData,[nframes*nchannels,1])
-    outfile = filepath+'out2.wav'
-    outwave = wave.open(outfile, 'wb')#定义存储路径以及文件名
     sampwidth = params['sampwidth']  #量化位数（byte）
     fs = params['framerate']         #采样频率
-    data_size = len(outData)
+    outData = wave_data              #待写入wav的数据，
+
+    outData = np.reshape(outData,[nframes*nchannels,1])
+    outwave = wave.open(wave_path, 'wb')#定义存储路径以及文件名
     framerate = int(fs)
     comptype = "NONE"
     compname = "not compressed"
@@ -74,7 +73,7 @@ def writeWav(wave_data, params):
         comptype, compname))
 
     for v in outData:
-            outwave.writeframes(struct.pack('h', int(v * 64000 / 2))) #outData:16位，-32767~32767，注意不要溢出
+        outwave.writeframes(struct.pack('h', int(v * 64000 / 2))) #outData:16位，-32767~32767，注意不要溢出
     outwave.close()
 
 def playWav(wav_path):
