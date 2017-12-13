@@ -7,6 +7,7 @@ import pylab as pl
 import numpy as np
 import scipy.signal as signal
 import pyaudio
+import struct
 
 def readWav(wav_path):
    f = wave.open(wav_path,"rb")
@@ -42,7 +43,9 @@ def writeSampleWav(wave_path):
     t = np.arange(0, time, 1.0/framerate)
     wave_data = signal.chirp(t, 100, time, 1000, method='linear') * 10000
     wave_data = wave_data.astype(np.short)
-
+    print(wave_data)
+    print(type(wave_data))
+    print(wave_data.shape)
     # 打开WAV文档
     f = wave.open(wave_path, "wb")
 
@@ -53,6 +56,26 @@ def writeSampleWav(wave_path):
     # 将wav_data转换为二进制数据写入文件
     f.writeframes(wave_data.tostring())
     f.close()
+
+def writeWav(wave_data, params):
+    nframes = params['nframes']      #采样点数
+    nchannels = params['nchannels']  #通道数
+    outData = wave_data  #待写入wav的数据，
+    outData = np.reshape(outData,[nframes*nchannels,1])
+    outfile = filepath+'out2.wav'
+    outwave = wave.open(outfile, 'wb')#定义存储路径以及文件名
+    sampwidth = params['sampwidth']  #量化位数（byte）
+    fs = params['framerate']         #采样频率
+    data_size = len(outData)
+    framerate = int(fs)
+    comptype = "NONE"
+    compname = "not compressed"
+    outwave.setparams((nchannels, sampwidth, framerate, nframes,
+        comptype, compname))
+
+    for v in outData:
+            outwave.writeframes(struct.pack('h', int(v * 64000 / 2))) #outData:16位，-32767~32767，注意不要溢出
+    outwave.close()
 
 def playWav(wav_path):
     chunk = 1024
