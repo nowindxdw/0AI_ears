@@ -73,7 +73,7 @@ def writeWav(wave_data, params, wave_path):
         comptype, compname))
 
     for v in outData:
-        outwave.writeframes(struct.pack('h', int(v * 64000 / 2))) #outData:16位，-32767~32767，注意不要溢出
+        outwave.writeframes(struct.pack('h', int(v))) #outData:16位，-32767~32767，注意不要溢出
     outwave.close()
 
 def playWav(wav_path):

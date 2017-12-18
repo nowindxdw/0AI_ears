@@ -18,3 +18,4 @@ from .wave_utils import readWav
 from .wave_utils import drawWave
 from .wave_utils import writeSampleWav
 from .wave_utils import playWav
+from .wave_utils import writeWav
