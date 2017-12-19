@@ -74,3 +74,4 @@ test/xears/data_utils/convert_utils.pyc
 /test/xears/data_source/*.txt
 /.DS_Store
 /test/xears/data_source/*.wave
+/test/xears/data_source/*.mat
