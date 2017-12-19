@@ -93,3 +93,6 @@ cv2.putText(orig, "Label: {}, {:.2f}%".format(label, prob * 100),
 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 cv2.imshow("Classification", orig)
 cv2.waitKey(0)
+
+#pip install opencv-python
+#python test/xears/models/CNN.py --image /Users/dawei/Downloads/football-06.jpg --model inception
