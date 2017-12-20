@@ -54,11 +54,11 @@ if args["model"] not in MODELS.keys():
 
 print("[INFO] loading {}...".format(args["model"]))
 Network = MODELS[args["model"]]
-base_model = Network(weights="imagenet")
+base_model = Network(weights="imagenet",include_top=False)
 
-#base_model.summary()
+base_model.summary()
 #model = Model(input=base_model.input, output=base_model.get_layer('block4_pool').output)
-#test: python test/xears/models/NST.py --wave test/xears/data_source/test.wav --model vgg16
+#test: python test/xears/models/NST.py -wc test/xears/data_source/test20.wav -ws test/xears/data_source/test30.wav -model vgg16
 
 def compute_content_cost(a_C, a_G):
     """
@@ -247,13 +247,13 @@ sess = tf.InteractiveSession()
 
 #Let's load, reshape, and normalize our "content" wave :
 content_wave,content_time = wave_utils.readWav(args["wave_content"])
+#print(content_wave.shape)
+#(1, 1350720)
 
 #Let's load, reshape and normalize our "style" wave :
 style_wave,style_time = wave_utils.readWav(args["wave_style"])
 
-
 #wave_utils.drawWave(content_wave,content_time)
 #wave_utils.drawWave(style_wave,style_time)
-
 
 

@@ -19,3 +19,6 @@ from .wave_utils import drawWave
 from .wave_utils import writeSampleWav
 from .wave_utils import playWav
 from .wave_utils import writeWav
+from .wave_utils import preprocess_wave
+from .wave_utils import deprocess_wave
+from .wave_utils import gen_noise_wave

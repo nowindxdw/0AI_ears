@@ -93,3 +93,26 @@ def playWav(wav_path):
         stream.write(data)
     stream.close()
     p.terminate()
+
+def preprocess_wave(wave_data):
+    wave_data = wave_data.reshape((670,672,3))
+    return wave_data
+
+def deprocess_wave(wave_data):
+    wave_data = wave_data.reshape((1,wave_data.shape[0]*wave_data.shape[1]*wave_data.shape[2]))
+    return wave_data
+
+def gen_noise_wave(wave_data):
+    #满足正态分布sigma * np.random.randn(...) + mu
+    len = wave_data.shape[1]
+    noise_data = np.zeros((1,len))
+
+    for i in range(len):
+       if(np.abs(wave_data[0][i]) >15000):
+          noise_data[0][i] = wave_data[0][i] +np.random.randn()*40000
+       if(noise_data[0][i]<-32767):
+          noise_data[0][i] = 0
+       if(noise_data[0][i]>32767):
+          noise_data[0][i] = 0
+
+    return noise_data
