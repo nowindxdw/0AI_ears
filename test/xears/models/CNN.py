@@ -2,6 +2,7 @@
 
 
 # import the necessary packages
+# cv2 <== pip install opencv-python
 from keras.applications import ResNet50
 from keras.applications import InceptionV3
 from keras.applications import Xception # TensorFlow ONLY
@@ -94,5 +95,6 @@ cv2.putText(orig, "Label: {}, {:.2f}%".format(label, prob * 100),
 cv2.imshow("Classification", orig)
 cv2.waitKey(0)
 
-#pip install opencv-python
-#python test/xears/models/CNN.py --image /Users/dawei/Downloads/football-06.jpg --model inception
+
+#run:
+#python test/xears/models/CNN.py --image /Users/dawei/Downloads/football-06.jpg --model resnet
