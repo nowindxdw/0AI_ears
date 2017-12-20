@@ -21,7 +21,7 @@ def readWav(wav_path):
    f.close()
    #将波形数据转换为数组
    wave_data = np.fromstring(str_data, dtype=np.short)
-   wave_data.shape = -1, 2
+   wave_data.shape = -1, nchannels
    wave_data = wave_data.T
    time = np.arange(0, nframes) * (1.0 / framerate)
    print('time:'+str(time))
@@ -30,8 +30,9 @@ def readWav(wav_path):
 def drawWave(wave_data,time):
     pl.subplot(211)
     pl.plot(time, wave_data[0])
-    pl.subplot(212)
-    pl.plot(time, wave_data[1], c="g")
+    if(wave_data.shape[0]==2):
+        pl.subplot(212)
+        pl.plot(time, wave_data[1], c="g")
     pl.xlabel("time (seconds)")
     pl.show()
 
