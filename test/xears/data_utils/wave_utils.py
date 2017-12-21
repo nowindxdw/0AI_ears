@@ -96,10 +96,11 @@ def playWav(wav_path):
 
 def preprocess_wave(wave_data):
     wave_data = wave_data.reshape((670,672,3))
+    wave_data = np.expand_dims(wave_data, axis=0)
     return wave_data
 
 def deprocess_wave(wave_data):
-    wave_data = wave_data.reshape((1,wave_data.shape[0]*wave_data.shape[1]*wave_data.shape[2]))
+    wave_data = wave_data.reshape((1,wave_data.shape[1]*wave_data.shape[2]*wave_data.shape[3]))
     return wave_data
 
 def gen_noise_wave(wave_data):

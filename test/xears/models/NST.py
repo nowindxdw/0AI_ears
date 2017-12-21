@@ -47,6 +47,13 @@ MODELS = {
     "xception": Xception, # TensorFlow ONLY
     "resnet": ResNet50
 }
+# write wav params
+params ={
+    'nframes' : 1350720,
+    'nchannels':1,
+    'sampwidth':2,
+    'framerate':44100
+}
 print('content wav:'+args["wave_content"])
 print('style wav:'+args["wave_style"])
 if args["model"] not in MODELS.keys():
@@ -171,7 +178,7 @@ STYLE_LAYERS = [
     ('block4_conv1', 0.2),
     ('block5_conv1', 0.2)]
 
-def compute_style_cost(model, STYLE_LAYERS):
+def compute_style_cost(model,style_wave, STYLE_LAYERS):
     """
     Computes the overall style cost from several chosen layers
 
@@ -192,9 +199,9 @@ def compute_style_cost(model, STYLE_LAYERS):
 
         # Select the output tensor of the currently selected layer
         #out = model[layer_name]
-        out = Model(input=model.input, output=model.get_layer(layer_name).output)
+        out = model.get_layer(layer_name).output
         # Set a_S to be the hidden layer activation from the layer we have selected, by running the session on out
-        a_S = sess.run(out)
+        a_S = Model(input=model.input, output=model.get_layer(layer_name).output).predict(style_wave)
 
         # Set a_G to be the hidden layer activation from same layer. Here, a_G references model[layer_name]
         # and isn't evaluated yet. Later in the code, we'll assign the image G as the model input, so that
@@ -247,13 +254,63 @@ sess = tf.InteractiveSession()
 
 #Let's load, reshape, and normalize our "content" wave :
 content_wave,content_time = wave_utils.readWav(args["wave_content"])
-#print(content_wave.shape)
-#(1, 1350720)
+generated_wave = wave_utils.gen_noise_wave(content_wave)
+content_wave = wave_utils.preprocess_wave(generated_wave)
+
 
 #Let's load, reshape and normalize our "style" wave :
 style_wave,style_time = wave_utils.readWav(args["wave_style"])
-
-#wave_utils.drawWave(content_wave,content_time)
-#wave_utils.drawWave(style_wave,style_time)
+style_wave = wave_utils.preprocess_wave(style_wave)
 
 
+out = base_model.get_layer('block4_pool').output
+'''
+a_C = Model(input=base_model.input, output=base_model.get_layer('block4_pool').output).predict(content_wave)
+a_G = out
+J_content = compute_content_cost(a_C, a_G)
+
+J_style = compute_style_cost(base_model, style_wave,STYLE_LAYERS)
+
+J = total_cost(J_content, J_style, alpha = 10, beta = 40)
+
+optimizer = tf.train.AdamOptimizer(2.0)
+train_step = optimizer.minimize(J)
+
+def model_nn(sess, input_wave, num_iterations = 200):
+
+    # Initialize global variables (you need to run the session on the initializer)
+    sess.run(tf.global_variables_initializer())
+
+    # Run the noisy input image (initial generated image) through the model. Use assign().
+
+    for i in range(num_iterations):
+
+        # Run the session on the train_step to minimize the total cost
+        sess.run(train_step)
+
+        # Compute the generated image by running the session on the current model['input']
+        generated_wave = Model(input=base_model.input, output=base_model.get_layer('block4_pool').output).predict(input_wave)
+
+        # Print every 20 iteration.
+        if i%20 == 0:
+            Jt, Jc, Js = sess.run([J, J_content, J_style])
+            print("Iteration " + str(i) + " :")
+            print("total cost = " + str(Jt))
+            print("content cost = " + str(Jc))
+            print("style cost = " + str(Js))
+
+            # save current generated image in the "/output" directory
+            #save_image("output/" + str(i) + ".png", generated_image)
+            wave_path = os.path.dirname(__file__)+os.path.sep+'output'+os.path.sep+'generated'+i+'.wav'
+            generated_de_wave = wave_utils.deprocess_wave(generated_wave)
+            wave_utils.writeWav(generated_de_wave,params,wave_path)
+    # save last generated image
+    wave_path = os.path.dirname(__file__)+os.path.sep+'output'+os.path.sep+'generated.wav'
+    generated_de_wave = wave_utils.deprocess_wave(generated_wave)
+    wave_utils.writeWav(generated_de_wave,params,wave_path)
+    # save_image('output/generated_image.jpg', generated_image)
+
+    return generated_image
+
+model_nn(sess, content_image)
+'''
