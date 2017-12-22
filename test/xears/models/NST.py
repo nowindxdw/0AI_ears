@@ -11,6 +11,7 @@ from keras.applications import Xception # TensorFlow ONLY
 from keras.applications import VGG16
 from keras.applications import VGG19
 from keras.models import Model
+from keras import backend as K
 from keras.applications import imagenet_utils
 from keras.applications.inception_v3 import preprocess_input
 from keras.preprocessing.image import img_to_array
@@ -47,6 +48,7 @@ MODELS = {
     "xception": Xception, # TensorFlow ONLY
     "resnet": ResNet50
 }
+WAVE_SHAPE= (1,670,672,3)
 # write wav params
 params ={
     'nframes' : 1350720,
@@ -61,256 +63,125 @@ if args["model"] not in MODELS.keys():
 
 print("[INFO] loading {}...".format(args["model"]))
 Network = MODELS[args["model"]]
-base_model = Network(weights="imagenet",include_top=False)
-
-base_model.summary()
+input = K.placeholder(WAVE_SHAPE)
+model = Network(include_top=False,weights="imagenet",input_tensor=input)
+model.summary()
 #model = Model(input=base_model.input, output=base_model.get_layer('block4_pool').output)
 #test: python test/xears/models/NST.py -wc test/xears/data_source/test20.wav -ws test/xears/data_source/test30.wav -model vgg16
 
-def compute_content_cost(a_C, a_G):
-    """
-    Computes the content cost
-
-    Arguments:
-    a_C -- tensor of dimension (1, n_H, n_W, n_C), hidden layer activations representing content of the image C
-    a_G -- tensor of dimension (1, n_H, n_W, n_C), hidden layer activations representing content of the image G
-
-    Returns:
-    J_content -- scalar that you compute using equation 1 above.
-    """
-
-    # Retrieve dimensions from a_G (≈1 line)
-    m, n_H, n_W, n_C = a_G.get_shape().as_list()
-
-    # Reshape a_C and a_G (≈2 lines)
-    a_C_unrolled = tf.reshape(tf.transpose(a_C,perm=[0,3,1,2]),[n_C, n_H * n_W])
-    a_G_unrolled = tf.reshape(tf.transpose(a_G,perm=[0,3,1,2]),[n_C, n_H * n_W])
-
-    # compute the cost with tensorflow (≈1 line)
-    J_content =  (1 / (4 * n_H * n_W * n_C))*tf.reduce_sum(tf.square(tf.subtract(a_C_unrolled,a_G_unrolled)))
-
-    return J_content
-"""
-#validate compute_content_cost
-tf.reset_default_graph()
-
-with tf.Session() as test:
-    tf.set_random_seed(1)
-    a_C = tf.random_normal([1, 4, 4, 3], mean=1, stddev=4)
-    a_G = tf.random_normal([1, 4, 4, 3], mean=1, stddev=4)
-    J_content = compute_content_cost(a_C, a_G)
-    print("J_content = " + str(J_content.eval()))
-
-#J_content = 6.76559
-"""
-
-def gram_matrix(A):
-    """
-    Argument:
-    A -- matrix of shape (n_C, n_H*n_W)
-
-    Returns:
-    GA -- Gram matrix of A, of shape (n_C, n_C)
-    """
-
-    GA = tf.matmul(A,tf.transpose(A))
-
-    return GA
-"""
-#validate gram_matrix
-tf.reset_default_graph()
-
-with tf.Session() as test:
-    tf.set_random_seed(1)
-    A = tf.random_normal([3, 2*1], mean=1, stddev=4)
-    GA = gram_matrix(A)
-
-    print("GA = " + str(GA.eval()))
-
-#GA = [[  6.42230511  -4.42912197  -2.09668207]
-# [ -4.42912197  19.46583748  19.56387138]
-# [ -2.09668207  19.56387138  20.6864624 ]]
-"""
-
-def compute_layer_style_cost(a_S, a_G):
-    """
-    Arguments:
-    a_S -- tensor of dimension (1, n_H, n_W, n_C), hidden layer activations representing style of the image S
-    a_G -- tensor of dimension (1, n_H, n_W, n_C), hidden layer activations representing style of the image G
-
-    Returns:
-    J_style_layer -- tensor representing a scalar value, style cost defined above by equation (2)
-    """
-
-    # Retrieve dimensions from a_G
-    m, n_H, n_W, n_C = a_G.get_shape().as_list()
-
-    # Reshape the images to have them of shape (n_C, n_H*n_W) (≈2 lines)
-    a_S = tf.reshape(tf.transpose(a_S,perm=[0,3,1,2]),[n_C, n_H * n_W])
-    a_G = tf.reshape(tf.transpose(a_G,perm=[0,3,1,2]),[n_C, n_H * n_W])
-
-    # Computing gram_matrices for both images S and G
-    GS = gram_matrix(a_S)
-    GG = gram_matrix(a_G)
-    # Computing the loss
-    J_style_layer = (1 / (4 * (n_C * n_H * n_W)**2))*tf.reduce_sum(tf.square(tf.subtract(GS,GG)))
-
-    return J_style_layer
-
-"""
-#validate compute_layer_style_cost
-tf.reset_default_graph()
-
-with tf.Session() as test:
-    tf.set_random_seed(1)
-    a_S = tf.random_normal([1, 4, 4, 3], mean=1, stddev=4)
-    a_G = tf.random_normal([1, 4, 4, 3], mean=1, stddev=4)
-    J_style_layer = compute_layer_style_cost(a_S, a_G)
-
-    print("J_style_layer = " + str(J_style_layer.eval()))
-#J_style_layer = 9.19028
-"""
-
-STYLE_LAYERS = [
-    ('block1_conv1', 0.2),
-    ('block2_conv1', 0.2),
-    ('block3_conv1', 0.2),
-    ('block4_conv1', 0.2),
-    ('block5_conv1', 0.2)]
-
-def compute_style_cost(model,style_wave, STYLE_LAYERS):
-    """
-    Computes the overall style cost from several chosen layers
-
-    Arguments:
-    model -- our tensorflow model
-    STYLE_LAYERS -- A python list containing:
-                        - the names of the layers we would like to extract style from
-                        - a coefficient for each of them
-
-    Returns:
-    J_style -- tensor representing a scalar value, style cost defined above by equation (2)
-    """
-
-    # initialize the overall style cost
-    J_style = 0
-
-    for layer_name, coeff in STYLE_LAYERS:
-
-        # Select the output tensor of the currently selected layer
-        #out = model[layer_name]
-        out = model.get_layer(layer_name).output
-        # Set a_S to be the hidden layer activation from the layer we have selected, by running the session on out
-        a_S = Model(input=model.input, output=model.get_layer(layer_name).output).predict(style_wave)
-
-        # Set a_G to be the hidden layer activation from same layer. Here, a_G references model[layer_name]
-        # and isn't evaluated yet. Later in the code, we'll assign the image G as the model input, so that
-        # when we run the session, this will be the activations drawn from the appropriate layer, with G as input.
-        a_G = out
-
-        # Compute style_cost for the current layer
-        J_style_layer = compute_layer_style_cost(a_S, a_G)
-
-        # Add coeff * J_style_layer of this layer to overall style cost
-        J_style += coeff * J_style_layer
-
-    return J_style
-
-def total_cost(J_content, J_style, alpha = 10, beta = 40):
-    """
-    Computes the total cost function
-
-    Arguments:
-    J_content -- content cost coded above
-    J_style -- style cost coded above
-    alpha -- hyperparameter weighting the importance of the content cost
-    beta -- hyperparameter weighting the importance of the style cost
-
-    Returns:
-    J -- total cost as defined by the formula above.
-    """
-
-    J = alpha * J_content + beta * J_style
-
-    return J
-
-"""
-#validate total_cost
-tf.reset_default_graph()
-
-with tf.Session() as test:
-    np.random.seed(3)
-    J_content = np.random.randn()
-    J_style = np.random.randn()
-    J = total_cost(J_content, J_style)
-    print("J = " + str(J))
-#J = 35.34667875478276
-"""
-# Reset the graph
-tf.reset_default_graph()
-
-# Start interactive session
-sess = tf.InteractiveSession()
-
 #Let's load, reshape, and normalize our "content" wave :
 content_wave,content_time = wave_utils.readWav(args["wave_content"])
-generated_wave = wave_utils.gen_noise_wave(content_wave)
-content_wave = wave_utils.preprocess_wave(generated_wave)
+content_wave = wave_utils.preprocess_wave(content_wave)
+content_wave = K.variable(content_wave) #包装为Keras张量，这是一个常数的四阶张量
 
 
 #Let's load, reshape and normalize our "style" wave :
 style_wave,style_time = wave_utils.readWav(args["wave_style"])
 style_wave = wave_utils.preprocess_wave(style_wave)
+style_wave = K.variable(style_wave)#包装为Keras张量，这是一个常数的四阶张量
+
+#初始化一个待优的占位符，这个地方待会儿实际跑起来的时候要填一个噪声
+noise_wave = K.placeholder(WAVE_SHAPE)
+img_nrows = noise_wave.shape[1]
+img_ncols = noise_wave.shape[2]
+#print(noise_wave)
+#print('img_nrows:')
+#print(img_nrows)
+#print('img_ncols:')
+#print(img_ncols)
+#将三个张量串联到一起，形成一个形如（3,img_nrows,img_ncols,3）的张量
+input_tensor = K.concatenate([content_wave,
+                              style_wave,
+                              noise_wave], axis=0)
+#print(input_tensor)
+#设置Gram矩阵的计算图，首先用batch_flatten将输出的featuremap压扁，然后自己跟自己做乘法，跟我们之前说过的过程一样。注意这里的输入是某一层的representation。
+def gram_matrix(x):
+    assert K.ndim(x) == 3
+    features = K.batch_flatten(K.permute_dimensions(x, (2, 0, 1)))
+    gram = K.dot(features, K.transpose(features))
+    return gram
+
+#计算他们的Gram矩阵，然后计算两个Gram矩阵的差的二范数，除以一个归一化值，公式请参考文献
+def style_loss(style, combination):
+    assert K.ndim(style) == 3
+    assert K.ndim(combination) == 3
+    S = gram_matrix(style)
+    C = gram_matrix(combination)
+    channels = 3
+    size = img_nrows * img_nrows
+    return K.sum(K.square(S - C)) / (4. * (channels ** 2) * (size ** 2))
+
+#设置内容loss计算方式，以内容图片和待优化的图片的representation为输入，计算他们差的二范数，公式参考文献
+def content_loss(base, combination):
+    return K.sum(K.square(combination - base))
+
+#施加全变差正则，全变差正则用于使生成的图片更加平滑自然。
+def total_variation_loss(x):
+    assert K.ndim(x) == 4
+    a = K.square(x[:, :img_nrows-1, :img_nrows-1, :] - x[:, 1:, :img_ncols-1, :])
+    b = K.square(x[:, :img_nrows-1, :img_ncols-1, :] - x[:, :img_nrows-1, 1:, :])
+    return K.sum(K.pow(a + b, 1.25))
+
+#这是一个张量字典，建立了层名称到层输出张量的映射，通过这个玩意我们可以通过层的名字来获取其输出张量
+#当然不用也行，使用model.get_layer(layer_name).output的效果也是一样的。
+outputs_dict = dict([(layer.name, layer.output) for layer in model.layers])
+
+#loss的值是一个浮点数，所以我们初始化一个标量张量来保存它
+loss = K.variable(0.)
+
+#layer_features就是图片在模型的block4_conv2这层的输出了，记得我们把输入做成了(3,3,nb_rows,nb_cols)这样的张量，
+#0号位置对应内容图像的representation，1号是风格图像的，2号位置是待优化的图像的。计算内容loss取内容图像和待优化图像即可
+layer_features = outputs_dict['block4_conv2']
+base_image_features = layer_features[0, :, :, :]
+combination_features = layer_features[2, :, :, :]
+loss += content_weight * content_loss(base_image_features,
+                                      combination_features)
+
+feature_layers = ['block1_conv1', 'block2_conv1',
+                  'block3_conv1', 'block4_conv1',
+                  'block5_conv1']
+#与上面的过程类似，只是对多个层的输出作用而已，求出各个层的风格loss，相加即可。
+for layer_name in feature_layers:
+    layer_features = outputs_dict[layer_name]
+    style_reference_features = layer_features[1, :, :, :]
+    combination_features = layer_features[2, :, :, :]
+    sl = style_loss(style_reference_features, combination_features)
+    loss += (style_weight / len(feature_layers)) * sl
+
+#求全变差约束，加入总loss中
+loss += total_variation_weight * total_variation_loss(noise_wave)
+
+#通过K.grad获取反传梯度
+grads = K.gradients(loss, noise_wave)
+
+outputs = [loss]
+#我们希望同时得到梯度和损失，所以这两个都应该是计算图的输出
+if type(grads) in {list, tuple}:
+    outputs += grads
+else:
+    outputs.append(grads)
+#编译计算图。Amazing！我们写了辣么多辣么多代码，其实都在规定输入输出的计算关系，到这里才将计算图编译了。
+#这条语句以后，f_outputs就是一个可用的Keras函数，给定一个输入张量，就能获得其反传梯度了。
+f_outputs = K.function([noise_wave], outputs)
 
 
-out = base_model.get_layer('block4_pool').output
-'''
-a_C = Model(input=base_model.input, output=base_model.get_layer('block4_pool').output).predict(content_wave)
-a_G = out
-J_content = compute_content_cost(a_C, a_G)
+# 根据后端初始化噪声，做去均值
+#x = np.random.uniform(0, 255, (1, img_nrows, img_ncols, 3)) - 128.
+x = wave_utils.preprocess_wave(wave_utils.gen_noise_wave(content_wave))
+#x = np.random.randint(-32767, 32767, (1, img_nrows, img_ncols, 3))
+for i in range(10):
+    print('Start of iteration', i)
+    start_time = time.time()
+    # 这里用了一个奇怪的函数 fmin_l_bfgs_b更新x，我们一会再看它，这里知道它的作用是更新x就好
+    x, min_val, info = fmin_l_bfgs_b(evaluator.loss, x.flatten(),
+                                     fprime=evaluator.grads, maxfun=20)
+    print('Current loss value:', min_val)
+    # save current generated image
+    # 每次迭代完成后把输出的图片后处理一下，保存起来
+    #wave = wave_utils.deprocess_wave(x.copy())
+    #fname = 'wave_at_iteration_%d.wav' % i
+    #wave_utils.writeWav(wave,params,fname)
+    #print('wave saved as', fname)
+    end_time = time.time()
 
-J_style = compute_style_cost(base_model, style_wave,STYLE_LAYERS)
-
-J = total_cost(J_content, J_style, alpha = 10, beta = 40)
-
-optimizer = tf.train.AdamOptimizer(2.0)
-train_step = optimizer.minimize(J)
-
-def model_nn(sess, input_wave, num_iterations = 200):
-
-    # Initialize global variables (you need to run the session on the initializer)
-    sess.run(tf.global_variables_initializer())
-
-    # Run the noisy input image (initial generated image) through the model. Use assign().
-
-    for i in range(num_iterations):
-
-        # Run the session on the train_step to minimize the total cost
-        sess.run(train_step)
-
-        # Compute the generated image by running the session on the current model['input']
-        generated_wave = Model(input=base_model.input, output=base_model.get_layer('block4_pool').output).predict(input_wave)
-
-        # Print every 20 iteration.
-        if i%20 == 0:
-            Jt, Jc, Js = sess.run([J, J_content, J_style])
-            print("Iteration " + str(i) + " :")
-            print("total cost = " + str(Jt))
-            print("content cost = " + str(Jc))
-            print("style cost = " + str(Js))
-
-            # save current generated image in the "/output" directory
-            #save_image("output/" + str(i) + ".png", generated_image)
-            wave_path = os.path.dirname(__file__)+os.path.sep+'output'+os.path.sep+'generated'+i+'.wav'
-            generated_de_wave = wave_utils.deprocess_wave(generated_wave)
-            wave_utils.writeWav(generated_de_wave,params,wave_path)
-    # save last generated image
-    wave_path = os.path.dirname(__file__)+os.path.sep+'output'+os.path.sep+'generated.wav'
-    generated_de_wave = wave_utils.deprocess_wave(generated_wave)
-    wave_utils.writeWav(generated_de_wave,params,wave_path)
-    # save_image('output/generated_image.jpg', generated_image)
-
-    return generated_image
-
-model_nn(sess, content_image)
-'''
+print('Iteration %d completed in %ds' % (i, end_time - start_time))
