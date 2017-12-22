@@ -94,8 +94,8 @@ def playWav(wav_path):
     stream.close()
     p.terminate()
 
-def preprocess_wave(wave_data):
-    wave_data = wave_data.reshape((670,672,3))
+def preprocess_wave(wave_data,imgCol,imgRow):
+    wave_data = wave_data.reshape((imgCol,imgRow,3))
     wave_data = np.expand_dims(wave_data, axis=0)
     return wave_data
 

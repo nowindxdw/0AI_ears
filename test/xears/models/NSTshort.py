@@ -50,14 +50,14 @@ MODELS = {
     "xception": Xception, # TensorFlow ONLY
     "resnet": ResNet50
 }
-WAVE_SHAPE= (1,670,672,3)
+WAVE_SHAPE= (1,300,300,3)
 content_weight = 10
 style_weight = 40
 total_variation_weight = 20
 
 # write wav params
 params ={
-    'nframes' : 1350720,
+    'nframes' : 270000,
     'nchannels':1,
     'sampwidth':2,
     'framerate':44100
@@ -73,7 +73,8 @@ input = K.placeholder(WAVE_SHAPE)
 base_model = Network(include_top=False,weights="imagenet",input_tensor=input)
 base_model.summary()
 #model = Model(input=base_model.input, output=base_model.get_layer('block4_pool').output)
-#test: python test/xears/models/NST.py -wc test/xears/data_source/test20.wav -ws test/xears/data_source/test30.wav -model vgg16
+#test: python test/xears/models/NSTshort.py -wc test/xears/data_source/test4s.wav -ws test/xears/data_source/test5s.wav -model vgg16
+
 
 #初始化一个待优的占位符，这个地方待会儿实际跑起来的时候要填一个噪声
 noise_wave = K.placeholder(WAVE_SHAPE)
@@ -123,8 +124,8 @@ def content_loss(base, combination):
 #施加全变差正则，全变差正则用于使生成的图片更加平滑自然。
 def total_variation_loss(x):
     assert K.ndim(x) == 4
-    a = K.square(x[:, :img_nrows-1, :img_nrows-1, :] - x[:, 1:, :img_ncols-3, :])
-    b = K.square(x[:, :img_nrows-1, :img_ncols-3, :] - x[:, :img_nrows-1, 3:, :])
+    a = K.square(x[:, :img_nrows-1, :img_nrows-1, :] - x[:, 1:, :img_ncols-1, :])
+    b = K.square(x[:, :img_nrows-1, :img_ncols-1, :] - x[:, :img_nrows-1, 1:, :])
     return K.sum(K.pow(a + b, 1.25))
 
 
