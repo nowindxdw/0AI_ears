@@ -16,7 +16,9 @@ from keras.applications import imagenet_utils
 from keras.applications.inception_v3 import preprocess_input
 from keras.preprocessing.image import img_to_array
 from keras.preprocessing.image import load_img
+from scipy.optimize import fmin_l_bfgs_b
 import numpy as np
+import time
 import argparse
 import tensorflow as tf
 
@@ -49,6 +51,10 @@ MODELS = {
     "resnet": ResNet50
 }
 WAVE_SHAPE= (1,670,672,3)
+content_weight = 10
+style_weight = 40
+total_variation_weight = 20
+
 # write wav params
 params ={
     'nframes' : 1350720,
@@ -64,8 +70,8 @@ if args["model"] not in MODELS.keys():
 print("[INFO] loading {}...".format(args["model"]))
 Network = MODELS[args["model"]]
 input = K.placeholder(WAVE_SHAPE)
-model = Network(include_top=False,weights="imagenet",input_tensor=input)
-model.summary()
+base_model = Network(include_top=False,weights="imagenet",input_tensor=input)
+base_model.summary()
 #model = Model(input=base_model.input, output=base_model.get_layer('block4_pool').output)
 #test: python test/xears/models/NST.py -wc test/xears/data_source/test20.wav -ws test/xears/data_source/test30.wav -model vgg16
 
@@ -82,18 +88,15 @@ style_wave = K.variable(style_wave)#包装为Keras张量，这是一个常数的
 
 #初始化一个待优的占位符，这个地方待会儿实际跑起来的时候要填一个噪声
 noise_wave = K.placeholder(WAVE_SHAPE)
-img_nrows = noise_wave.shape[1]
-img_ncols = noise_wave.shape[2]
-#print(noise_wave)
-#print('img_nrows:')
-#print(img_nrows)
-#print('img_ncols:')
-#print(img_ncols)
+img_nrows = int(noise_wave.shape[1])
+img_ncols = int(noise_wave.shape[2])
+
 #将三个张量串联到一起，形成一个形如（3,img_nrows,img_ncols,3）的张量
 input_tensor = K.concatenate([content_wave,
                               style_wave,
                               noise_wave], axis=0)
 #print(input_tensor)
+model = Network(include_top=False,weights="imagenet",input_tensor=input_tensor)
 #设置Gram矩阵的计算图，首先用batch_flatten将输出的featuremap压扁，然后自己跟自己做乘法，跟我们之前说过的过程一样。注意这里的输入是某一层的representation。
 def gram_matrix(x):
     assert K.ndim(x) == 3
@@ -118,14 +121,17 @@ def content_loss(base, combination):
 #施加全变差正则，全变差正则用于使生成的图片更加平滑自然。
 def total_variation_loss(x):
     assert K.ndim(x) == 4
-    a = K.square(x[:, :img_nrows-1, :img_nrows-1, :] - x[:, 1:, :img_ncols-1, :])
-    b = K.square(x[:, :img_nrows-1, :img_ncols-1, :] - x[:, :img_nrows-1, 1:, :])
+    a = K.square(x[:, :img_nrows-1, :img_nrows-1, :] - x[:, 1:, :img_ncols-3, :])
+    b = K.square(x[:, :img_nrows-1, :img_ncols-3, :] - x[:, :img_nrows-1, 3:, :])
     return K.sum(K.pow(a + b, 1.25))
+
+
+
 
 #这是一个张量字典，建立了层名称到层输出张量的映射，通过这个玩意我们可以通过层的名字来获取其输出张量
 #当然不用也行，使用model.get_layer(layer_name).output的效果也是一样的。
 outputs_dict = dict([(layer.name, layer.output) for layer in model.layers])
-
+#print(outputs_dict)
 #loss的值是一个浮点数，所以我们初始化一个标量张量来保存它
 loss = K.variable(0.)
 
@@ -164,11 +170,45 @@ else:
 #这条语句以后，f_outputs就是一个可用的Keras函数，给定一个输入张量，就能获得其反传梯度了。
 f_outputs = K.function([noise_wave], outputs)
 
+def eval_loss_and_grads(x):
+    # 把输入reshape层矩阵
+    x = x.reshape((1, img_nrows, img_ncols, 3))
+    outs = f_outputs([x])
+    loss_value = outs[0]
+    # outs是一个长为2的tuple，0号位置是loss，1号位置是grad。我们把grad拍扁成矩阵
+    if len(outs[1:]) == 1:
+        grad_values = outs[1].flatten().astype('float64')
+    else:
+        grad_values = np.array(outs[1:]).flatten().astype('float64')
+    return loss_value, grad_values
 
+class Evaluator(object):
+    def __init__(self):
+        # 这个类别的事不干，专门保存损失值和梯度值
+        self.loss_value = None
+        self.grads_values = None
+
+    def loss(self, x):
+        # 调用刚才写的那个函数同时得到梯度值和损失值，但只返回损失值，而将梯度值保存在成员变量self.grads_values中，这样这个函数就满足了func要求的条件
+        assert self.loss_value is None
+        loss_value, grad_values = eval_loss_and_grads(x)
+        self.loss_value = loss_value
+        self.grad_values = grad_values
+        return self.loss_value
+
+    def grads(self, x):
+        # 这个函数不用做任何计算，只需要把成员变量self.grads_values的值返回去就行了
+        assert self.loss_value is not None
+        grad_values = np.copy(self.grad_values)
+        self.loss_value = None
+        self.grad_values = None
+        return grad_values
+
+evaluator = Evaluator()
 # 根据后端初始化噪声，做去均值
 #x = np.random.uniform(0, 255, (1, img_nrows, img_ncols, 3)) - 128.
-x = wave_utils.preprocess_wave(wave_utils.gen_noise_wave(content_wave))
-#x = np.random.randint(-32767, 32767, (1, img_nrows, img_ncols, 3))
+x = np.random.randint(-32767, 32767, (1, img_nrows, img_ncols, 3))
+
 for i in range(10):
     print('Start of iteration', i)
     start_time = time.time()
